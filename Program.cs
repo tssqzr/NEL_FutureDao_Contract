@@ -30,8 +30,8 @@ namespace NEL_FutureDao_Contract
             Config.initConfig("config.json");
             //
             startRun(new ContractTask("ContractTask").run);
-            //startRun(new PriceTask("PriceTask").run);
-            //startRun(new ProposalTask("ProposalTask").run);
+            startRun(new PriceTask("PriceTask").run);
+            startRun(new ProposalTask("ProposalTask").run);
         }
         static void startRun(Action action)
         {
