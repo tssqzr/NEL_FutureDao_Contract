@@ -1,0 +1,10 @@
+{
+  "mongodbConnStr": "",
+  "mongodbDatabase": "",
+  "ethOriginRecordCol": "",
+  "ethOriginStateCol": "",
+  "ethRecordCol": "",
+  "ethVoteStateCol": "",
+  "ethPriceStateCol": "",
+  "interval": 0
+}
