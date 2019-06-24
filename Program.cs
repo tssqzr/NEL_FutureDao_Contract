@@ -275,7 +275,7 @@ namespace NEL_FutureDao_Contract
                 foreach (var item in queryRes)
                 {
                     var hash = item["address"].ToString();
-                    var votehash = getVoteHash(hash);
+                    var voteHash = getVoteHash(hash);
                     var eventName = item["eventName"].ToString();
                     if (eventName != "OnBuy" && eventName != "OnSell") continue;
 
@@ -296,7 +296,7 @@ namespace NEL_FutureDao_Contract
                     {
                         var newdata = new JObject {
                             { "hash", hash},
-                            { "votehash", votehash},
+                            { "voteHash", voteHash},
                             { "eventName", eventName},
                             { "txid", txid},
                             { "blockindex", blockindex},
