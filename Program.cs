@@ -281,10 +281,10 @@ namespace NEL_FutureDao_Contract
                     var blockindex = long.Parse(item["blockNumner"].ToString());
                     var blocktime = long.Parse(item["blockTime"].ToString());
                     var opAddress = ((JArray)item["values"])[0]["value"].ToString();
-                    var ethAmount = long.Parse(((JArray)item["values"])[1]["value"].ToString());
-                    var fndAmount = long.Parse(((JArray)item["values"])[2]["value"].ToString());
+                    var ethAmount = decimal.Parse(((JArray)item["values"])[1]["value"].ToString().format("e"));
+                    var fndAmount = decimal.Parse(((JArray)item["values"])[2]["value"].ToString());
 
-                    var price = fndAmount == 0 ? 0 : ethAmount / fndAmount;
+                    var price = fndAmount == 0 ? decimal.Zero : ethAmount / fndAmount;
                     var perFrom24h = getPerFrom24h(hash, price, blocktime);
 
                     // 若没有，则直接入库；否则更新入库
@@ -315,16 +315,16 @@ namespace NEL_FutureDao_Contract
         }
 
         private long seconds24H = 24 * 60 * 60;
-        private string getPerFrom24h(string hash, long price, long time)
+        private string getPerFrom24h(string hash, decimal price, long time)
         {
-            double priceNew = price;
-            double priceOld = price;
+            decimal priceNew = price;
+            decimal priceOld = price;
             string findStr = new JObject { { "hash", hash }, { "blocktime", new JObject { { "$gte", time - seconds24H } } } }.ToString();
             string sortStr = new JObject { { "blocktime", 1 } }.ToString();
             var queryRes = mh.GetData(mongodbConnStr, mongodbDatabase, ethPriceStateCol, findStr, sortStr, 0, 1);
             if (queryRes != null && queryRes.Count > 0)
             {
-                priceOld = (double)queryRes[0]["price"];
+                priceOld = decimal.Parse(queryRes[0]["price"].ToString());
             }
             var rr = (priceNew - priceOld) * 100 / priceOld;
             var cc = rr.ToString("0.00");
@@ -439,9 +439,8 @@ namespace NEL_FutureDao_Contract
                         var proposer = ((JArray)item["values"])[2]["value"].ToString();
                         var startTime = long.Parse(((JArray)item["values"])[3]["value"].ToString());
                         var recipient = ((JArray)item["values"])[4]["value"].ToString();
-                        var value = BigInteger.Parse(((JArray)item["values"])[5]["value"].ToString().format("e"));
-                        //var value = ((JArray)item["values"])[5]["value"].ToString().format("e");
-                        var timeConsuming = BigInteger.Parse(((JArray)item["values"])[6]["value"].ToString());
+                        var value = decimal.Parse(((JArray)item["values"])[5]["value"].ToString().format("e"));
+                        var timeConsuming = decimal.Parse(((JArray)item["values"])[6]["value"].ToString());
                         var detail = ((JArray)item["values"])[7]["value"].ToString();
                         var voteYesCount = 0;
                         var voteNotCount = 0;
@@ -459,7 +458,7 @@ namespace NEL_FutureDao_Contract
                             { "recipient", recipient},
                             { "value", value.ToString()},
                             { "timeConsuming", timeConsuming.ToString()},
-                            { "valueAvg", (value/timeConsuming).ToString()},
+                            { "valueAvg", (value/timeConsuming).ToString("0")},
                             { "displayMethod", timeConsuming > 0 ? DisplayMethod.ByDays: DisplayMethod.ByOne},
                             { "detail", detail},
                             { "voteYesCount", voteYesCount},
