@@ -88,6 +88,8 @@ namespace NEL_FutureDao_Contract
             File.AppendAllText(name+".log", string.Format("{0} {1} failed, errMsg:{2}, errStack:{3}", System.DateTime.Now.ToString("u"), name, ex.Message, ex.StackTrace));
         }
     }
+
+    // 合约数据
     class ContractTask
     {
         private string name;
@@ -300,10 +302,10 @@ namespace NEL_FutureDao_Contract
                             { "blockindex", blockindex},
                             { "blocktime", blocktime},
                             { "address", opAddress},
-                            { "ethAmount", ethAmount},
-                            { "fndAmount", fndAmount},
-                            { "price", price},
-                            { "perFrom24h", perFrom24h},
+                            { "ethAmount", ethAmount.ToString().removeTailZero()},
+                            { "fndAmount", fndAmount.ToString().removeTailZero()},
+                            { "price", price.ToString().removeTailZero()},
+                            { "perFrom24h", perFrom24h.removeTailZero()},
                         }.ToString();
                         mh.PutData(mongodbConnStr, mongodbDatabase, ethPriceStateCol, newdata);
                     }
@@ -456,8 +458,8 @@ namespace NEL_FutureDao_Contract
                             { "proposer", proposer},
                             { "startTime", startTime},
                             { "recipient", recipient},
-                            { "value", value.ToString()},
-                            { "timeConsuming", timeConsuming.ToString()},
+                            { "value", value.ToString().removeTailZero()},
+                            { "timeConsuming", timeConsuming.ToString().removeTailZero()},
                             { "valueAvg", (value/timeConsuming).ToString("0")},
                             { "displayMethod", timeConsuming > 0 ? DisplayMethod.ByDays: DisplayMethod.ByOne},
                             { "detail", detail},
@@ -562,6 +564,9 @@ namespace NEL_FutureDao_Contract
         }
     }
 
+
+
+
     class DisplayMethod
     {
         public const string ByDays = "days";    // "按天接收";
@@ -580,20 +585,18 @@ namespace NEL_FutureDao_Contract
         public const int Not = 2;
     }
     //
-    [BsonIgnoreExtraElements]
-    class EthPoolInfo
-    {
-        public ObjectId _id { get; set; }
-        public string ethPoolHash { get; set; }
-        public string ethBalance { get; set; }
-        public string ethBalance30 { get; set; }
-        public string ethBalance70 { get; set; }
-        public string buyPrice { get; set; }
-        public string sellPrie { get; set; }
-        public string perFrom24h { get; set; }
-        public string lastBlockNumber { get; set; }
-    }
     public static class DaoHelper {
+        public static string removeTailZero(this string s)
+        {
+            if (s.Contains("."))
+            {
+                while (s.EndsWith("0") || s.EndsWith("."))
+                {
+                    s = s.Substring(0, s.Length - 1);
+                }
+            }
+            return s;
+        }
         public static string format(this string s, string format/* 8e+18 */)
         {
             s = s.ToLower();
