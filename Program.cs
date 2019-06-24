@@ -4,6 +4,8 @@ using NEL_FutureDao_Contract.lib;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
+using System.Numerics;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -79,6 +81,13 @@ namespace NEL_FutureDao_Contract
 
     }
 
+    class LogHelper
+    {
+        public static void log(string name, Exception ex)
+        {
+            File.AppendAllText(name+".log", string.Format("{0} {1} failed, errMsg:{2}, errStack:{3}", System.DateTime.Now.ToString("u"), name, ex.Message, ex.StackTrace));
+        }
+    }
     class ContractTask
     {
         private string name;
@@ -105,6 +114,7 @@ namespace NEL_FutureDao_Contract
                 catch (Exception ex)
                 {
                     Console.WriteLine("{0} failed, errMsg:{1}, errStack:{2}", name, ex.Message, ex.StackTrace);
+                    LogHelper.log(name, ex);
                     Thread.Sleep(Config.interval * 10);
                 }
 
@@ -116,7 +126,7 @@ namespace NEL_FutureDao_Contract
             long lh = GetLCounter();
             for (long index = lh + 1; index <= rh; ++index)
             {
-                string findStr = new JObject { { "blockNumner", index },{ "eventName", "OnCreate" } }.ToString();
+                string findStr = new JObject { { "blockNumner", index }, { "eventName", "OnCreate" } }.ToString();
                 var queryRes = mh.GetData(mongodbConnStr, mongodbDatabase, ethOriginStateCol, findStr);
                 foreach (var item in queryRes)
                 {
@@ -133,7 +143,7 @@ namespace NEL_FutureDao_Contract
                     var voteHash = ((JArray)item["values"])[4]["value"].ToString();
 
                     // 若没有，则直接入库；否则更新入库
-                    findStr = new JObject { { "fundHash", fundHash },{ "voteHash", voteHash} }.ToString();
+                    findStr = new JObject { { "fundHash", fundHash }, { "voteHash", voteHash } }.ToString();
                     var subRes = mh.GetData(mongodbConnStr, mongodbDatabase, ethContractStateCol, findStr);
                     if (subRes == null || subRes.Count == 0)
                     {
@@ -162,22 +172,22 @@ namespace NEL_FutureDao_Contract
         }
         private void updateHashLoop()
         {
-            string findStr = new JObject { { "hash",""},{ "voteHash",""} }.ToString();
-            string fieldStr = new JObject { { "txid",1} }.ToString();
+            string findStr = new JObject { { "hash", "" }, { "voteHash", "" } }.ToString();
+            string fieldStr = new JObject { { "txid", 1 } }.ToString();
             var queryRes = mh.GetDataWithField(mongodbConnStr, mongodbDatabase, ethContractInfoCol, fieldStr, findStr);
-            if(queryRes != null && queryRes.Count > 0)
+            if (queryRes != null && queryRes.Count > 0)
             {
-                foreach(var item in queryRes)
+                foreach (var item in queryRes)
                 {
                     string txid = item["txid"].ToString();
-                    var subfindStr = new JObject { { "txid",txid} }.ToString();
-                    var subfieldStr = new JObject { { "fundHash",1 },{ "voteHash",1 } }.ToString();
+                    var subfindStr = new JObject { { "txid", txid } }.ToString();
+                    var subfieldStr = new JObject { { "fundHash", 1 }, { "voteHash", 1 } }.ToString();
                     var subres = mh.GetDataWithField(mongodbConnStr, mongodbDatabase, ethContractStateCol, subfieldStr, subfindStr);
-                    if(subres != null && subres.Count > 0)
+                    if (subres != null && subres.Count > 0)
                     {
                         var fundHash = subres[0]["fundHash"].ToString();
                         var voteHash = subres[0]["voteHash"].ToString();
-                        var updateStr = new JObject { { "$set", new JObject { { "hash", fundHash },{ "voteHash", voteHash} } } }.ToString();
+                        var updateStr = new JObject { { "$set", new JObject { { "hash", fundHash }, { "voteHash", voteHash } } } }.ToString();
                         mh.UpdateData(mongodbConnStr, mongodbDatabase, ethContractInfoCol, updateStr, subfindStr);
                     }
                 }
@@ -244,6 +254,7 @@ namespace NEL_FutureDao_Contract
                 catch (Exception ex)
                 {
                     Console.WriteLine("{0} failed, errMsg:{1}, errStack:{2}", name, ex.Message, ex.StackTrace);
+                    LogHelper.log(name, ex);
                     Thread.Sleep(Config.interval * 10);
                 }
 
@@ -272,9 +283,9 @@ namespace NEL_FutureDao_Contract
                     var opAddress = ((JArray)item["values"])[0]["value"].ToString();
                     var ethAmount = long.Parse(((JArray)item["values"])[1]["value"].ToString());
                     var fndAmount = long.Parse(((JArray)item["values"])[2]["value"].ToString());
-                    
-                    var price = fndAmount == 0 ? 0: ethAmount / fndAmount;
-                    var perFrom24h = getPerFrom24h(hash,price,blocktime);
+
+                    var price = fndAmount == 0 ? 0 : ethAmount / fndAmount;
+                    var perFrom24h = getPerFrom24h(hash, price, blocktime);
 
                     // 若没有，则直接入库；否则更新入库
                     findStr = new JObject { { "txid", txid } }.ToString();
@@ -308,10 +319,10 @@ namespace NEL_FutureDao_Contract
         {
             double priceNew = price;
             double priceOld = price;
-            string findStr = new JObject { { "hash", hash},{ "blocktime", new JObject { { "$gte", time - seconds24H } } } }.ToString();
-            string sortStr = new JObject { { "blocktime", 1} }.ToString();
-            var queryRes = mh.GetData(mongodbConnStr, mongodbDatabase, ethPriceStateCol, findStr, sortStr, 0,1);
-            if(queryRes != null && queryRes.Count > 0)
+            string findStr = new JObject { { "hash", hash }, { "blocktime", new JObject { { "$gte", time - seconds24H } } } }.ToString();
+            string sortStr = new JObject { { "blocktime", 1 } }.ToString();
+            var queryRes = mh.GetData(mongodbConnStr, mongodbDatabase, ethPriceStateCol, findStr, sortStr, 0, 1);
+            if (queryRes != null && queryRes.Count > 0)
             {
                 priceOld = (double)queryRes[0]["price"];
             }
@@ -327,9 +338,9 @@ namespace NEL_FutureDao_Contract
         private void updateCounter(long counter)
         {
             string findStr = new JObject { { "key", ethPriceStateCol } }.ToString();
-            if(mh.GetDataCount(mongodbConnStr, mongodbDatabase, ethRecordCol, findStr) == 0)
+            if (mh.GetDataCount(mongodbConnStr, mongodbDatabase, ethRecordCol, findStr) == 0)
             {
-                var newdata = new JObject { { "key", ethPriceStateCol}, { "counter", counter} }.ToString();
+                var newdata = new JObject { { "key", ethPriceStateCol }, { "counter", counter } }.ToString();
                 mh.PutData(mongodbConnStr, mongodbDatabase, ethRecordCol, newdata);
                 return;
             }
@@ -338,14 +349,14 @@ namespace NEL_FutureDao_Contract
         }
         private long GetLCounter()
         {
-            string findStr = new JObject { {"key",ethPriceStateCol } }.ToString();
+            string findStr = new JObject { { "key", ethPriceStateCol } }.ToString();
             var res = mh.GetData(mongodbConnStr, mongodbDatabase, ethRecordCol, findStr);
             if (res != null && res.Count > 0) return long.Parse(res[0]["counter"].ToString());
             return -1;
         }
         private long GetRCounter()
         {
-            string findStr = new JObject { { "counter", "blockNumber"} }.ToString();
+            string findStr = new JObject { { "counter", "blockNumber" } }.ToString();
             var res = mh.GetData(mongodbConnStr, mongodbDatabase, ethOriginRecordCol, findStr); ;
             if (res != null && res.Count > 0) return long.Parse(res[0]["lastIndex"].ToString());
             return -1;
@@ -395,6 +406,7 @@ namespace NEL_FutureDao_Contract
                 catch (Exception ex)
                 {
                     Console.WriteLine("{0} failed, errMsg:{1}, errStack:{2}", name, ex.Message, ex.StackTrace);
+                    LogHelper.log(name, ex);
                     Thread.Sleep(Config.interval * 10);
                 }
 
@@ -420,15 +432,16 @@ namespace NEL_FutureDao_Contract
                     var txid = item["transactionHash"].ToString();
                     var blockindex = long.Parse(item["blockNumner"].ToString());
                     var blocktime = long.Parse(item["blockTime"].ToString());
-                    if(eventName == "OnApplyProposal")
+                    if (eventName == "OnApplyProposal")
                     {
                         var proposalIndex = long.Parse(((JArray)item["values"])[0]["value"].ToString());
                         var proposalName = ((JArray)item["values"])[1]["value"].ToString();
                         var proposer = ((JArray)item["values"])[2]["value"].ToString();
                         var startTime = long.Parse(((JArray)item["values"])[3]["value"].ToString());
                         var recipient = ((JArray)item["values"])[4]["value"].ToString();
-                        var value = long.Parse(((JArray)item["values"])[5]["value"].ToString());
-                        var timeConsuming = long.Parse(((JArray)item["values"])[6]["value"].ToString());
+                        var value = BigInteger.Parse(((JArray)item["values"])[5]["value"].ToString().format("e"));
+                        //var value = ((JArray)item["values"])[5]["value"].ToString().format("e");
+                        var timeConsuming = BigInteger.Parse(((JArray)item["values"])[6]["value"].ToString());
                         var detail = ((JArray)item["values"])[7]["value"].ToString();
                         var voteYesCount = 0;
                         var voteNotCount = 0;
@@ -444,17 +457,17 @@ namespace NEL_FutureDao_Contract
                             { "proposer", proposer},
                             { "startTime", startTime},
                             { "recipient", recipient},
-                            { "value", value},
-                            { "timeConsuming", timeConsuming},
-                            { "valueAvg", value/timeConsuming},
+                            { "value", value.ToString()},
+                            { "timeConsuming", timeConsuming.ToString()},
+                            { "valueAvg", (value/timeConsuming).ToString()},
                             { "displayMethod", timeConsuming > 0 ? DisplayMethod.ByDays: DisplayMethod.ByOne},
                             { "detail", detail},
                             { "voteYesCount", voteYesCount},
                             { "voteNotCount", voteNotCount},
                             { "proposalState", proposalState }
                         }.ToString();
-                        findStr = new JObject { { "hash", fundhash }, { "voteHash", voteHash },{ "proposalIndex", proposalIndex } }.ToString();
-                        if(mh.GetDataCount(mongodbConnStr, mongodbDatabase, ethVoteStateCol, findStr) == 0)
+                        findStr = new JObject { { "hash", fundhash }, { "voteHash", voteHash }, { "proposalIndex", proposalIndex } }.ToString();
+                        if (mh.GetDataCount(mongodbConnStr, mongodbDatabase, ethVoteStateCol, findStr) == 0)
                         {
                             mh.PutData(mongodbConnStr, mongodbDatabase, ethVoteStateCol, newdata);
                         }
@@ -467,11 +480,11 @@ namespace NEL_FutureDao_Contract
                         var VoteCount = long.Parse(((JArray)item["values"])[2]["value"].ToString());
                         findStr = new JObject { { "hash", fundhash }, { "voteHash", voteHash }, { "proposalIndex", proposalIndex } }.ToString();
                         queryRes = mh.GetData(mongodbConnStr, mongodbDatabase, ethVoteStateCol, findStr);
-                        if(queryRes != null && queryRes.Count >0)
+                        if (queryRes != null && queryRes.Count > 0)
                         {
                             var key = "";
                             var val = 0L;
-                            if(VoteFlag == VoteYesOrNot.Yes)
+                            if (VoteFlag == VoteYesOrNot.Yes)
                             {
                                 key = "voteYesCount";
                             }
@@ -479,10 +492,10 @@ namespace NEL_FutureDao_Contract
                             {
                                 key = "voteNotCount";
                             }
-                            if(key != "")
+                            if (key != "")
                             {
                                 val = long.Parse(queryRes[0][key].ToString()) + VoteCount;
-                                mh.UpdateData(mongodbConnStr, mongodbDatabase, ethVoteStateCol, new JObject { { "$set", new JObject { { key, val} } } }.ToString(), findStr);
+                                mh.UpdateData(mongodbConnStr, mongodbDatabase, ethVoteStateCol, new JObject { { "$set", new JObject { { key, val } } } }.ToString(), findStr);
                             }
                         }
                         continue;
@@ -580,6 +593,30 @@ namespace NEL_FutureDao_Contract
         public string sellPrie { get; set; }
         public string perFrom24h { get; set; }
         public string lastBlockNumber { get; set; }
+    }
+    public static class DaoHelper {
+        public static string format(this string s, string format/* 8e+18 */)
+        {
+            s = s.ToLower();
+            int index = s.IndexOf(format);
+            if(index != -1)
+            {
+                var pw = s.Substring(index + 2);
+                var st = s.Substring(0, index);
+                return st + fullZero(int.Parse(pw));
+            }
+            return s;
+        }
+        private static string fullZero(int digit)
+        {
+            StringBuilder sb = new StringBuilder();
+            for(int i=0; i<digit; ++i)
+            {
+                sb.Append("0");
+            }
+            return sb.ToString();
+
+        }
     }
     
 
