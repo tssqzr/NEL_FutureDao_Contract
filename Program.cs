@@ -283,8 +283,8 @@ namespace NEL_FutureDao_Contract
                     var blockindex = long.Parse(item["blockNumner"].ToString());
                     var blocktime = long.Parse(item["blockTime"].ToString());
                     var opAddress = ((JArray)item["values"])[0]["value"].ToString();
-                    var ethAmount = decimal.Parse(((JArray)item["values"])[1]["value"].ToString().format("e"));
-                    var fndAmount = decimal.Parse(((JArray)item["values"])[2]["value"].ToString());
+                    var ethAmount = decimal.Parse(((JArray)item["values"])[1]["value"].ToString().format("e").removeTailZero());
+                    var fndAmount = decimal.Parse(((JArray)item["values"])[2]["value"].ToString().format("e").removeTailZero());
 
                     var price = fndAmount == 0 ? decimal.Zero : ethAmount / fndAmount;
                     var perFrom24h = getPerFrom24h(hash, price, blocktime);
@@ -458,7 +458,7 @@ namespace NEL_FutureDao_Contract
                             { "proposer", proposer},
                             { "startTime", startTime},
                             { "recipient", recipient},
-                            { "value", value.ToString().removeTailZero()},
+                            { "value", value.ToString().format("e").removeTailZero()},
                             { "timeConsuming", timeConsuming.ToString().removeTailZero()},
                             { "valueAvg", (value/timeConsuming).ToString("0")},
                             { "displayMethod", timeConsuming > 0 ? DisplayMethod.ByDays: DisplayMethod.ByOne},
@@ -605,7 +605,8 @@ namespace NEL_FutureDao_Contract
             {
                 var pw = s.Substring(index + 2);
                 var st = s.Substring(0, index);
-                return st + fullZero(int.Parse(pw));
+                var rr = decimal.Parse(st) * new decimal(Math.Pow(10,int.Parse(pw)));
+                return rr.ToString();
             }
             return s;
         }
