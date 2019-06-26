@@ -460,7 +460,7 @@ namespace NEL_FutureDao_Contract
                             { "recipient", recipient},
                             { "value", value.ToString().format("e").removeTailZero()},
                             { "timeConsuming", timeConsuming.ToString().removeTailZero()},
-                            { "valueAvg", (value/timeConsuming).ToString("0")},
+                            { "valueAvg", (timeConsuming > 0 ? value/timeConsuming:value).ToString("0")},
                             { "displayMethod", timeConsuming > 0 ? DisplayMethod.ByDays: DisplayMethod.ByOne},
                             { "detail", detail},
                             { "voteYesCount", voteYesCount},
